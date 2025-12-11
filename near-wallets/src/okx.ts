@@ -1,7 +1,7 @@
 import { SignedTransaction } from "@near-js/transactions";
 
 import { isCurrentBrowserSupported } from "./utils/detectBrowser";
-import { connectorActionsToNearActions, ConnectorAction } from "./utils/action";
+import { connectorActionsToNearActions, ConnectorAction, FunctionCallAction } from "./utils/action";
 import { NearRpc } from "./utils/rpc";
 
 const checkExist = async () => {
@@ -97,13 +97,15 @@ const OKXWallet = async () => {
       await checkExist();
       if (!(await okx("isSignedIn"))) throw new Error("Wallet not signed in");
 
+      if (transactions.some((transaction) => transaction.actions.some((action) => action.type !== "FunctionCall"))) {
+        throw new Error("Only FunctionCall actions are supported by OKX Wallet");
+      }
+
       try {
         const resp = await okx("requestSignTransactions", {
           transactions: transactions.map((transaction) => ({
+            actions: transaction.actions.map((action) => (action as FunctionCallAction).params),
             receiverId: transaction.receiverId,
-            actions: connectorActionsToNearActions(transaction.actions)
-              .map((action) => action.functionCall)
-              .filter(Boolean),
           })),
         });
 
@@ -127,12 +129,14 @@ const OKXWallet = async () => {
       if (!(await okx("isSignedIn"))) throw new Error("Wallet not signed in");
       if (!receiverId) throw new Error("Receiver ID is required");
 
+      if (actions.some((action) => action.type !== "FunctionCall")) {
+        throw new Error("Only FunctionCall actions are supported by OKX Wallet");
+      }
+
       try {
         const signedTx = await okx("signTransaction", {
+          actions: actions.map((action) => (action as FunctionCallAction).params),
           receiverId: receiverId,
-          actions: connectorActionsToNearActions(actions)
-            .map((action) => action.functionCall)
-            .filter(Boolean),
         });
 
         const signedTransaction = getSignedTransaction(signedTx);
