@@ -11,6 +11,11 @@ import {
   GlobalContractIdentifier,
 } from "@near-js/transactions";
 
+// Fireblocks/near-api-js compatibility imports
+// @ts-ignore - BN.js doesn't have proper ESM types
+import BN from "bn.js";
+import { transactions as nearApiTransactions, utils as nearApiUtils } from "near-api-js";
+
 export interface CreateAccountAction {
   type: "CreateAccount";
 }
@@ -162,4 +167,61 @@ export const connectorActionsToNearActions = (actions: ConnectorAction[]): Actio
 
     throw new Error("Invalid action");
   });
+};
+
+/**
+ * Creates near-api-js compatible actions for Fireblocks/WalletConnect
+ * Uses BN.js for BigInt handling to match near-api-js serialization
+ */
+const createNearApiJsAction = (action: ConnectorAction): any => {
+  switch (action.type) {
+    case "CreateAccount":
+      return nearApiTransactions.createAccount();
+    case "DeployContract": {
+      const { code } = action.params;
+      return nearApiTransactions.deployContract(code);
+    }
+    case "FunctionCall": {
+      const { methodName, args, gas, deposit } = action.params;
+      return nearApiTransactions.functionCall(methodName, args, new BN(gas) as any, new BN(deposit) as any);
+    }
+    case "Transfer": {
+      const { deposit } = action.params;
+      return nearApiTransactions.transfer(new BN(deposit) as any);
+    }
+    case "Stake": {
+      const { stake, publicKey } = action.params;
+      return nearApiTransactions.stake(new BN(stake) as any, nearApiUtils.PublicKey.from(publicKey));
+    }
+    case "AddKey": {
+      const { publicKey, accessKey } = action.params;
+      const getAccessKey = (permission: AddKeyPermission) => {
+        if (permission === "FullAccess") {
+          return nearApiTransactions.fullAccessKey();
+        }
+        const { receiverId, methodNames = [] } = permission;
+        const allowance = permission.allowance ? (new BN(permission.allowance) as any) : undefined;
+        return nearApiTransactions.functionCallAccessKey(receiverId, methodNames, allowance as any);
+      };
+      return nearApiTransactions.addKey(nearApiUtils.PublicKey.from(publicKey), getAccessKey(accessKey.permission));
+    }
+    case "DeleteKey": {
+      const { publicKey } = action.params;
+      return nearApiTransactions.deleteKey(nearApiUtils.PublicKey.from(publicKey));
+    }
+    case "DeleteAccount": {
+      const { beneficiaryId } = action.params;
+      return nearApiTransactions.deleteAccount(beneficiaryId);
+    }
+    default:
+      throw new Error("Invalid action type");
+  }
+};
+
+/**
+ * Converts ConnectorActions to near-api-js compatible actions for Fireblocks
+ * This ensures proper transaction serialization for Fireblocks signing
+ */
+export const connectorActionsToNearApiJsActions = (actions: ConnectorAction[]): any[] => {
+  return actions.map((action) => createNearApiJsAction(action));
 };
