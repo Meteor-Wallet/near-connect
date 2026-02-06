@@ -1,6 +1,12 @@
+# 0.9.0
+
+- Add connect.use(WalletPlugin): **Experimental** feature to override wallet methods
+- Add footerBranding property to disable or override footer UI
+- Add signDelegateAction
+
 # 0.8.2
 
-- fix css styles
+- Fix css styles
 
 # 0.8.0
 
@@ -9,8 +15,8 @@
 
 # 0.7.0
 
-- add UseGlobalContractAction, DeployGlobalContractAction
-- support Actions from @near-js
+- Add UseGlobalContractAction, DeployGlobalContractAction
+- Support Actions from @near-js
 
 # 0.6.11
 

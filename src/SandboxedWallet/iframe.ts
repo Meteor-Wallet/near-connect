@@ -42,6 +42,7 @@ class IframeExecutor {
     });
 
     this.popup = new IframeWalletPopup({
+      footer: this.executor.connector.footerBranding,
       iframe: this.iframe,
       onApprove: () => {},
       onReject: () => {

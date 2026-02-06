@@ -156,6 +156,17 @@ const selector = new NearConnector({
 });
 ```
 
+## Branding UI
+
+Currently, the library is branded as HOT Connector in the footer of modal windows. You can set your own brand or completely disable the footer using this method:
+
+```ts
+const selector = new NearConnector({
+  // or { icon: "url", heading: "", link: "", linkText: "" }
+  footerBranding: null,
+});
+```
+
 ## How to add my wallet?
 
 When you develop a connector for your wallet, you can immediately test your code on real applications that use NEAR Connect. Super easy!
@@ -203,4 +214,3 @@ Auditing `src/popups` will help assess the correctness of interaction with the D
 Andrei Zhevlakov (CTO at HOT Labs)
 
 andrey@herewallet.app
-

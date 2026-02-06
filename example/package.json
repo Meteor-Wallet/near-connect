@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "cd ../near-wallets && EXAMPLE=true yarn build:wallets && cd ../example && yarn copy-manifest && vite",
+    "start": "cd ../near-wallets && yarn && EXAMPLE=true yarn build:wallets && cd ../example && yarn copy-manifest && vite",
     "copy-manifest": "node scripts/copy-manifest.js",
     "build": "cd ../near-wallets && EXAMPLE=true yarn build:wallets && cd ../example && yarn copy-manifest && vite build && echo '*' > dist/CORS",
     "deploy": "surge ./dist",

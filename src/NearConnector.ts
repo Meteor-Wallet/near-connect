@@ -3,12 +3,12 @@ import { NearWalletsPopup } from "./popups/NearWalletsPopup";
 import { LocalStorage, DataStorage } from "./helpers/storage";
 import IndexedDB from "./helpers/indexdb";
 
-import { EventNearWalletInjected, WalletManifest, Network, WalletFeatures, Logger, NearWalletBase, AbstractWalletConnect } from "./types";
+import { EventNearWalletInjected, WalletManifest, Network, WalletFeatures, Logger, NearWalletBase, AbstractWalletConnect, FooterBranding } from "./types";
 import { ParentFrameWallet } from "./ParentFrameWallet";
 import { InjectedWallet } from "./InjectedWallet";
 import { SandboxWallet } from "./SandboxedWallet";
-import { EventMap } from "./types";
 import { WalletPlugin } from "./types/plugin";
+import { EventMap } from "./types";
 
 interface NearConnectorOptions {
   providers?: { mainnet?: string[]; testnet?: string[] };
@@ -23,6 +23,11 @@ interface NearConnectorOptions {
   events?: EventEmitter<EventMap>;
   storage?: DataStorage;
   logger?: Logger;
+
+  /**
+   * Footer branding for the wallet selector popup. If not provided, default branding will be used. If provided null, footer will be hidden.
+   */
+  footerBranding?: FooterBranding | null;
 
   /**
    * @deprecated
@@ -54,6 +59,7 @@ export class NearConnector {
   signInData?: { contractId?: string; methodNames?: Array<string> };
   walletConnect?: Promise<AbstractWalletConnect> | AbstractWalletConnect;
 
+  footerBranding: FooterBranding | null;
   excludedWallets: string[] = [];
   autoConnect?: boolean;
 
@@ -74,6 +80,17 @@ export class NearConnector {
     this.excludedWallets = options?.excludedWallets ?? [];
     this.features = options?.features ?? {};
     this.signInData = options?.signIn;
+
+    if (options?.footerBranding !== undefined) {
+      this.footerBranding = options?.footerBranding;
+    } else {
+      this.footerBranding = {
+        icon: "https://tgapp.herewallet.app/images/hot/hot-icon.png",
+        heading: "HOT Connector",
+        link: "https://download.hot-labs.org?hotconnector",
+        linkText: "Don't have a wallet?",
+      };
+    }
 
     this.whenManifestLoaded = new Promise(async (resolve) => {
       if (options?.manifest == null || typeof options.manifest === "string") {
@@ -202,6 +219,7 @@ export class NearConnector {
     await this.whenManifestLoaded.catch(() => {});
     return new Promise<string>((resolve, reject) => {
       const popup = new NearWalletsPopup({
+        footer: this.footerBranding,
         wallets: this.availableWallets.map((wallet) => wallet.manifest),
         onRemoveDebugManifest: async (id: string) => this.removeDebugWallet(id),
         onAddDebugManifest: async (wallet: string) => this.registerDebugWallet(wallet),
@@ -277,10 +295,10 @@ export class NearConnector {
     return wallet;
   }
 
-    async use(plugin: WalletPlugin): Promise<void> {
-    await this.whenManifestLoaded.catch(() => { });
+  async use(plugin: WalletPlugin): Promise<void> {
+    await this.whenManifestLoaded.catch(() => {});
 
-    this.wallets = this.wallets.map(wallet => {
+    this.wallets = this.wallets.map((wallet) => {
       return new Proxy(wallet, {
         get(target, prop, receiver) {
           const originalValue = Reflect.get(target, prop, receiver);
@@ -294,14 +312,12 @@ export class NearConnector {
               const next = () => originalValue.apply(target, args);
               // Pass all args if any exist, otherwise undefined
               // this ensures next is always the last param
-              return args.length > 0
-                ? pluginMethod.call(this, ...args, next)
-                : pluginMethod.call(this, undefined, next);
+              return args.length > 0 ? pluginMethod.call(this, ...args, next) : pluginMethod.call(this, undefined, next);
             };
           }
 
           return originalValue;
-        }
+        },
       }) as NearWalletBase;
     });
   }

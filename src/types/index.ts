@@ -1,6 +1,6 @@
 import type { FinalExecutionOutcome } from "@near-js/types";
 import type { Action, SignedDelegate } from "@near-js/transactions";
-import type { ConnectorAction } from "./actions/types";
+import type { ConnectorAction } from "../actions/types";
 
 export type { FinalExecutionOutcome, Action };
 
@@ -62,7 +62,7 @@ export interface SignDelegateActionsParams {
   signerId?: string;
   delegateActions: Array<{
     actions: Array<Action | ConnectorAction>;
-    receiverId: string
+    receiverId: string;
   }>;
 }
 
@@ -98,7 +98,7 @@ export type SignDelegateActionResult = {
 };
 
 export interface SignDelegateActionsResponse {
-  signedDelegateActions: SignDelegateActionResult[]
+  signedDelegateActions: SignDelegateActionResult[];
 }
 
 export interface NearWalletBase {
@@ -165,4 +165,11 @@ export interface AbstractWalletConnect {
   core: {
     projectId?: string;
   };
+}
+
+export interface FooterBranding {
+  icon: string;
+  heading: string;
+  link: string;
+  linkText: string;
 }

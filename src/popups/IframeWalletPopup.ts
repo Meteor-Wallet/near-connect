@@ -1,8 +1,16 @@
 import { html } from "../helpers/html";
+import { FooterBranding } from "../types";
 import { Popup } from "./Popup";
 
 export class IframeWalletPopup extends Popup<{}> {
-  constructor(readonly delegate: { iframe: HTMLIFrameElement; onApprove: () => void; onReject: () => void }) {
+  constructor(
+    readonly delegate: {
+      iframe: HTMLIFrameElement;
+      footer: FooterBranding | null;
+      onApprove: () => void;
+      onReject: () => void;
+    }
+  ) {
     super(delegate);
   }
 
@@ -18,6 +26,19 @@ export class IframeWalletPopup extends Popup<{}> {
     this.delegate.iframe.style.width = "100%";
     this.delegate.iframe.style.height = "720px";
     this.delegate.iframe.style.border = "none";
+  }
+
+  get footer() {
+    if (!this.delegate.footer) return "";
+    const { icon, heading, link, linkText } = this.delegate.footer;
+
+    return html`
+      <div class="footer">
+        <img src="${icon}" alt="${heading}" />
+        <p>${heading}</p>
+        <a class="get-wallet-link" href="${link}" target="_blank">${linkText}</a>
+      </div>
+    `;
   }
 
   get dom() {
