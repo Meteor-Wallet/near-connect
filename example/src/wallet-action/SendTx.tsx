@@ -42,8 +42,6 @@ export const SendTx = ({ wallet, network }: IPropsWalletAction) => {
       const accounts = await wallet.getAccounts()
       const senderId = accounts[0]?.accountId;
       if (!senderId) throw new Error("No account available to sign delegate action");
-      const publicKey = accounts[0]?.publicKey;
-      if (!publicKey) throw new Error("No public key available to sign delegate action");
 
       const { signedDelegateActions } = await wallet.signDelegateActions({ 
         delegateActions: [{
