@@ -12,9 +12,18 @@ import {
 } from "./types";
 import { NearConnector } from "./NearConnector";
 import { nearActionsToConnectorActions } from "./actions";
+import { base64ToUint8Array } from "./helpers/base64";
+import type { SignedDelegate } from "@near-js/transactions";
+import { deserialize } from "borsh";
+import { SCHEMA } from "./helpers/schema";
 
 export class InjectedWallet {
-  constructor(readonly connector: NearConnector, readonly wallet: NearWalletBase) {}
+  constructor(readonly connector: NearConnector, readonly wallet: Omit<NearWalletBase, 'signDelegateActions'> & {
+    signDelegateActions: (params: SignDelegateActionsParams) => Promise<{
+      delegateActionHashBase64: string;
+      signedDelegateActionBase64: string;
+    }[]>
+  }) {}
 
   get manifest() {
     return this.wallet.manifest;
@@ -68,13 +77,22 @@ export class InjectedWallet {
   }
 
   async signDelegateActions(params: SignDelegateActionsParams): Promise<SignDelegateActionsResponse> {
-    return this.wallet.signDelegateActions({
+    const response = await this.wallet.signDelegateActions({
       ...params,
       delegateActions: params.delegateActions.map((delegateAction) => ({
         ...delegateAction,
         actions: nearActionsToConnectorActions(delegateAction.actions),
       })),
       network: params.network || this.connector.network,
-    });
+    })
+
+    return {
+      signedDelegateActions: response.map(({ delegateActionHashBase64, signedDelegateActionBase64 }) => {
+        return {
+          delegateHash: base64ToUint8Array(delegateActionHashBase64),
+          signedDelegate: <SignedDelegate>deserialize(SCHEMA.SignedDelegate, base64ToUint8Array(signedDelegateActionBase64)),
+        };
+      }),
+    }
   }
 }

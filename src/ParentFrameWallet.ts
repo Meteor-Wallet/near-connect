@@ -1,4 +1,6 @@
+import { deserialize } from "borsh";
 import { nearActionsToConnectorActions } from "./actions";
+import { base64ToUint8Array } from "./helpers/base64";
 import { uuid4 } from "./helpers/uuid";
 import { NearConnector } from "./NearConnector";
 import {
@@ -13,6 +15,8 @@ import {
   SignDelegateActionsParams,
   SignDelegateActionsResponse,
 } from "./types";
+import { SCHEMA } from "./helpers/schema";
+import type { SignedDelegate } from "@near-js/transactions";
 
 export class ParentFrameWallet {
   constructor(readonly connector: NearConnector, readonly manifest: WalletManifest) {}
@@ -86,6 +90,18 @@ export class ParentFrameWallet {
       network: params.network || this.connector.network,
     };
     
-    return this.callParentFrame("near:signDelegateActions", args) as Promise<SignDelegateActionsResponse>;
+    const response = await this.callParentFrame("near:signDelegateActions", args) as {
+      delegateActionHashBase64: string;
+      signedDelegateActionBase64: string;
+    }[];
+
+    return {
+      signedDelegateActions: response.map(({ delegateActionHashBase64, signedDelegateActionBase64 }) => {
+        return {
+          delegateHash: base64ToUint8Array(delegateActionHashBase64),
+          signedDelegate: <SignedDelegate>deserialize(SCHEMA.SignedDelegate, base64ToUint8Array(signedDelegateActionBase64)),
+        };
+      }),
+    };
   }
 }

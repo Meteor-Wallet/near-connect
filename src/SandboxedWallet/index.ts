@@ -13,6 +13,10 @@ import {
 import { NearConnector } from "../NearConnector";
 import { nearActionsToConnectorActions } from "../actions";
 import SandboxExecutor from "./executor";
+import { base64ToUint8Array } from "../helpers/base64";
+import type { SignedDelegate } from "@near-js/transactions";
+import { deserialize } from "borsh";
+import { SCHEMA } from "../helpers/schema";
 
 export class SandboxWallet {
   executor: SandboxExecutor;
@@ -70,7 +74,20 @@ export class SandboxWallet {
       })),
       network: params.network || this.connector.network,
     };
-    return this.executor.call("wallet:signDelegateActions", args);
+
+    const response = await this.executor.call("wallet:signDelegateActions", args) as {
+      delegateActionHashBase64: string;
+      signedDelegateActionBase64: string;
+    }[];
+
+    return {
+      signedDelegateActions: response.map(({ delegateActionHashBase64, signedDelegateActionBase64 }) => {
+        return {
+          delegateHash: base64ToUint8Array(delegateActionHashBase64),
+          signedDelegate: <SignedDelegate>deserialize(SCHEMA.SignedDelegate, base64ToUint8Array(signedDelegateActionBase64)),
+        };
+      }),
+    };
   }
 }
 
