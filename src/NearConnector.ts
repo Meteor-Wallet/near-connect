@@ -66,7 +66,6 @@ export class NearConnector {
 
   providers: { mainnet?: string[]; testnet?: string[] } = { mainnet: [], testnet: [] };
   signInData?: { contractId?: string; methodNames?: Array<string> };
-  signMessageOnSignIn?: SignMessageParams;
   walletConnect?: Promise<AbstractWalletConnect> | AbstractWalletConnect;
 
   footerBranding: FooterBranding | null;
@@ -254,17 +253,15 @@ export class NearConnector {
       const wallet = await this.wallet(walletId);
       this.logger?.log(`Wallet available to connect`, wallet);
 
-      const finalSignMessageParams = signMessageParams ?? this.signMessageOnSignIn;
-
       await this.storage.set("selected-wallet", walletId);
-      this.logger?.log(`Set preferred wallet, try to signIn${finalSignMessageParams != null ? " (with signed message)" : ""}`, walletId);
+      this.logger?.log(`Set preferred wallet, try to signIn${signMessageParams != null ? " (with signed message)" : ""}`, walletId);
 
-      if (finalSignMessageParams != null) {
+      if (signMessageParams != null) {
         const accounts = await wallet.signInAndSignMessage({
           contractId: this.signInData?.contractId,
           methodNames: this.signInData?.methodNames,
           network: this.network,
-          messageParams: finalSignMessageParams,
+          messageParams: signMessageParams,
         });
 
         if (!accounts?.length) throw new Error("Failed to sign in");
