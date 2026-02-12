@@ -133,7 +133,9 @@ export class NearConnector {
           this.wallets = this.wallets.filter((wallet) => wallet.manifest.id !== event.data.manifest.id);
           this.wallets.unshift(new ParentFrameWallet(this, event.data.manifest));
           this.events.emit("selector:walletsChanged", {});
-          if (this.autoConnect) this.connect(event.data.manifest.id);
+          if (this.autoConnect) this.connect({
+            walletId: event.data.manifest.id
+          });
         }
       });
     }
