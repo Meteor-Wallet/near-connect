@@ -30,31 +30,35 @@ Unlike near-wallet-selector, this library provides a secure execution environmen
 import { NearConnector } from "@hot-labs/near-connect";
 
 const connector = new NearConnector();
+
 connector.on("wallet:signOut", async () => {});
+
+// Listen for account sign in only
 connector.on("wallet:signIn", async (t) => {
   const wallet = await connector.wallet(); // api like near-wallet-selector
   const address = t.accounts[0].accountId;
   wallet.signMessage(); // all methods like near-wallet-selector
 });
-```
 
-### Sign In and Sign Message (single action)
-
-Add `signMessageParams` to `connect()` to trigger the `wallet:signInAndSignMessage` event (which includes the `signedMessage` data with the account data)
-
-```ts
-import { NearConnector } from "@hot-labs/near-connect";
-
-const connector = new NearConnector();
-
-connector.on("wallet:signOut", async () => {});
+// OR - listen for account sign in with signed message (as a single wallet request)
 connector.on("wallet:signInAndSignMessage", async (t) => {
-  const wallet = await connector.wallet(); // api like near-wallet-selector
+  const wallet = await connector.wallet();
   const address = t.accounts[0].accountId;
   const signedMessage = t.accounts[0].signedMessage;
+  wallet.signAndSendTransactions({ /** transaction data **/ });
 });
 
-connector.connect({ signMessageParams: { message: "Sign in to Example App", recipient: "Demo app", nonce } });
+// Initiate connector
+connector.connect();
+
+// OR - to initiate and trigger "wallet:signInAndSignMessage"
+connector.connect({
+  signMessageParams: {
+    message: "Sign in to Example App",
+    recipient: "Demo app",
+    nonce
+  }
+});
 ```
 
 ## WalletConnect support (optional)
