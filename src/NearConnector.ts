@@ -44,7 +44,7 @@ const defaultManifests = [
   "https://cdn.jsdelivr.net/gh/azbang/hot-connector/repository/manifest.json",
 ];
 
-function createFilterForWalletFeature(features: Partial<WalletFeatures>) {
+function createFilterForWalletFeatures(features: Partial<WalletFeatures>) {
   return (wallet: NearWalletBase) => {
     return Object.entries(features).every(([key, value]) => {
       if (value && !wallet.manifest.features?.[key as keyof WalletFeatures]) return false;
@@ -233,7 +233,7 @@ export class NearConnector {
     return new Promise<string>((resolve, reject) => {
       const popup = new NearWalletsPopup({
         footer: this.footerBranding,
-        wallets: this.availableWallets.map((wallet) => wallet.manifest),
+        wallets: this.availableWallets.filter(createFilterForWalletFeatures(features)).map((wallet) => wallet.manifest),
         onRemoveDebugManifest: async (id: string) => this.removeDebugWallet(id),
         onAddDebugManifest: async (wallet: string) => this.registerDebugWallet(wallet),
         onReject: () => (reject(new Error("User rejected")), popup.destroy()),
