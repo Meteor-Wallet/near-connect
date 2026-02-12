@@ -22,7 +22,7 @@ export interface NearConnector_ConnectOptions {
    * 
    * This is useful for cases where you want to verify ownership of the account during sign in without any additional steps.
    */
-  signMessageParams?: SignMessageParams;
+  signMessageParams?: SignMessageDuringSignInParams;
 }
 
 export interface Account {
@@ -41,6 +41,8 @@ export interface SignMessageParams {
   network?: Network;
   signerId?: string;
 }
+
+export type SignMessageDuringSignInParams = Omit<SignMessageParams, "signerId" | "network">;
 
 export interface SignedMessage {
   accountId: string;
@@ -126,7 +128,7 @@ export interface SignInParams {
 }
 
 export interface SignInAndSignMessageParams extends SignInParams {
-  messageParams: SignMessageParams;
+  messageParams: SignMessageDuringSignInParams;
 }
 
 export interface NearWalletBase {
