@@ -15,6 +15,7 @@ import {
 // @ts-ignore - BN.js doesn't have proper ESM types
 import BN from "bn.js";
 import { transactions as nearApiTransactions, utils as nearApiUtils } from "near-api-js";
+import { fullAccessKey } from "near-api-js/lib/transaction";
 
 export interface CreateAccountAction {
   type: "CreateAccount";
@@ -150,18 +151,13 @@ export const connectorActionsToNearActions = (actions: ConnectorAction[]): Actio
     if (action.type === "AddKey") {
       return actionCreators.addKey(
         PublicKey.from(action.params.publicKey),
-        new AccessKey({
-          nonce: BigInt(action.params.accessKey.nonce ?? 0),
-          permission: new AccessKeyPermission(
-            action.params.accessKey.permission === "FullAccess"
-              ? new FullAccessPermission()
-              : new FunctionCallPermission({
-                  receiverId: action.params.accessKey.permission.receiverId,
-                  allowance: BigInt(action.params.accessKey.permission.allowance ?? 0),
-                  methodNames: action.params.accessKey.permission.methodNames ?? [],
-                })
-          ),
-        })
+        action.params.accessKey.permission === "FullAccess"
+          ? actionCreators.fullAccessKey()
+          : actionCreators.functionCallAccessKey(
+              action.params.accessKey.permission.receiverId,
+              action.params.accessKey.permission.methodNames ?? [],
+              BigInt(action.params.accessKey.permission.allowance ?? 0),
+            )
       );
     }
 
