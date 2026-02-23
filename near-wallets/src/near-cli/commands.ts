@@ -106,8 +106,13 @@ function buildActionPart(action: ConnectorAction): string {
     case "DeployGlobalContract":
       throw new Error(`${action.type} is not supported by NEAR CLI wallet — binary data cannot be passed via command line`);
 
-    case "UseGlobalContract":
-      throw new Error("UseGlobalContract is not supported by NEAR CLI wallet");
+    case "UseGlobalContract": {
+      const id = action.params.contractIdentifier;
+      if ("accountId" in id) {
+        return `add-action use-global-contract use-global-account-id '${shellEscape(id.accountId)}'`;
+      }
+      return `add-action use-global-contract use-global-hash '${shellEscape(id.codeHash)}'`;
+    }
 
     default:
       throw new Error("Unknown action type");
@@ -125,7 +130,6 @@ export function buildTransactionCommand({
   actions: ConnectorAction[];
   network: Network;
 }): string {
-  // Single FunctionCall → specialized command
   if (actions.length === 1 && actions[0].type === "FunctionCall") {
     const fc = actions[0].params;
     const args = JSON.stringify(fc.args);
@@ -142,7 +146,6 @@ export function buildTransactionCommand({
     ].join(" \\\n    ");
   }
 
-  // Single Transfer → specialized command
   if (actions.length === 1 && actions[0].type === "Transfer") {
     return [
       "near tokens",
@@ -153,7 +156,37 @@ export function buildTransactionCommand({
     ].join(" \\\n    ");
   }
 
-  // Multi-action or other single actions → construct-transaction
+  if (actions.length === 1 && actions[0].type === "AddKey") {
+    const action = actions[0];
+    const parts: string[] = ["near account"];
+    parts.push(`add-key '${shellEscape(signerId)}'`);
+    if (action.params.accessKey.permission === "FullAccess") {
+      parts.push("grant-full-access");
+    } else {
+      const perm = action.params.accessKey.permission;
+      parts.push("grant-function-call-access");
+      if (perm.allowance) parts.push(`--allowance '${yoctoToNear(perm.allowance)} NEAR'`);
+      parts.push(`--contract-account-id '${shellEscape(perm.receiverId)}'`);
+      if (perm.methodNames && perm.methodNames.length > 0) {
+        parts.push(`--function-names '${shellEscape(perm.methodNames.join(", "))}'`);
+      }
+    }
+    parts.push(`use-manually-provided-public-key ${action.params.publicKey}`);
+    parts.push(`network-config ${network}`);
+    parts.push("sign-with-keychain");
+    return parts.join(" \\\n    ");
+  }
+
+  if (actions.every((a) => a.type === "DeleteKey")) {
+    const keys = actions.map((a) => a.params.publicKey).join(",");
+    return [
+      "near account",
+      `delete-keys '${shellEscape(signerId)}' public-keys ${keys}`,
+      `network-config ${network}`,
+      "sign-with-keychain",
+    ].join(" \\\n    ");
+  }
+
   const actionParts = actions.map(buildActionPart);
   return [
     "near transaction",

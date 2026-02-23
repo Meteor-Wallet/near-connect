@@ -21,8 +21,6 @@ interface FunctionCallKey {
   methods: string[];
 }
 
-// --- Storage helpers ---
-
 const storage = () => window.selector.storage;
 
 async function getStoredAccountId(network: string): Promise<string> {
@@ -50,15 +48,11 @@ async function removeStoredFunctionCallKey(network: string): Promise<void> {
   await storage().remove(`cli:${network}:functionCallKey`);
 }
 
-// --- RPC ---
-
 function getRpc(network: string): NearRpc {
   const providers = window.selector?.providers?.[network as "mainnet" | "testnet"];
   const fallback = network === "mainnet" ? "https://rpc.mainnet.fastnear.com" : "https://rpc.testnet.fastnear.com";
   return new NearRpc(providers && providers.length > 0 ? providers : [fallback]);
 }
-
-// --- UI helpers ---
 
 function renderPage(html: string): HTMLElement {
   document.head.innerHTML = headHtml;
@@ -82,7 +76,6 @@ function setupCopyButtons(root: HTMLElement): void {
           btn.textContent = orig;
         }, 1500);
       } catch {
-        // fallback: select the code block text
         const code = btn.parentElement?.querySelector("code");
         if (code) {
           const range = document.createRange();
@@ -103,8 +96,6 @@ function showError(root: HTMLElement, message: string): void {
     el.style.display = "block";
   }
 }
-
-// --- Prompt helpers ---
 
 function promptAccountId(opts: {
   title: string;
@@ -162,7 +153,6 @@ function promptTransactionHash(command: string): Promise<string> {
         showError(root, "Please paste the transaction hash or explorer URL");
         return;
       }
-      // Extract hash from: explorer URL, "Transaction ID: HASH", or plain HASH
       const urlMatch = raw.match(/(?:txns?|transactions)\/([A-Za-z0-9]{43,44})/);
       if (urlMatch) {
         resolve(urlMatch[1]);
@@ -203,7 +193,6 @@ function promptSignMessageOutput(command: string, step?: string): Promise<SignMe
       }
 
       try {
-        // Try to extract JSON from the pasted text
         const jsonMatch = raw.match(/\{[\s\S]*"signature"[\s\S]*\}/);
         if (!jsonMatch) throw new Error("No valid JSON found");
 
@@ -228,8 +217,6 @@ function showLoading(message: string): void {
   renderPage(loadingHtml(message));
   window.selector.ui.showIframe();
 }
-
-// --- Signing helpers ---
 
 function storedKeyCanSign(receiverId: string, actions: Action[], fck: FunctionCallKey | null): boolean {
   if (!fck || fck.contractId !== receiverId) return false;
@@ -275,20 +262,16 @@ async function verifyTransaction(
   throw lastError ?? new Error(`Transaction ${txHash} not found after ${retries} attempts`);
 }
 
-// --- Main wallet class ---
-
 class NearCliWallet {
   signIn = async ({ contractId, methodNames, network }: any) => {
     const existingAccountId = await getStoredAccountId(network);
     const existingFck = await getStoredFunctionCallKey(network);
 
-    // Already signed in with a matching function call key — nothing to do
     if (existingAccountId && (!contractId || existingFck?.contractId === contractId)) {
       const publicKey = existingFck ? KeyPair.fromString(existingFck.privateKey as any).getPublicKey().toString() : "";
       return [{ accountId: existingAccountId, publicKey }];
     }
 
-    // Need account ID (either new user or returning user who needs a new key)
     const needsAccountId = !existingAccountId;
     const accountId = existingAccountId || await promptAccountId({
       title: "Connect with NEAR CLI",
@@ -298,7 +281,6 @@ class NearCliWallet {
     });
 
     if (contractId) {
-      // Generate keypair and show add-key command
       const keyPair = KeyPair.fromRandom("ed25519");
       const publicKey = keyPair.getPublicKey().toString();
 
@@ -312,7 +294,6 @@ class NearCliWallet {
 
       await promptAddKeyCommand(command, needsAccountId ? "Step 2 of 2" : undefined);
 
-      // Store credentials
       const fck: FunctionCallKey = {
         privateKey: keyPair.toString(),
         contractId,
@@ -324,7 +305,6 @@ class NearCliWallet {
       return [{ accountId, publicKey }];
     }
 
-    // Sign-in without add-key
     await setStoredAccountId(network, accountId);
     return [{ accountId, publicKey: "" }];
   };
@@ -337,13 +317,11 @@ class NearCliWallet {
     const needsAccountId = !existingAccountId;
     const needsAddKey = contractId && existingFck?.contractId !== contractId;
 
-    // Count steps: accountId (if needed) + sign message + add key (if needed)
-    let totalSteps = 1; // sign message is always required
+    let totalSteps = 1;
     if (needsAccountId) totalSteps++;
     if (needsAddKey) totalSteps++;
     let currentStep = 0;
 
-    // Step: Ask for account ID (skip if returning user)
     const accountId = existingAccountId || await promptAccountId({
       title: "Connect with NEAR CLI",
       subtitle: "Enter your NEAR account ID to sign in and sign a message",
@@ -351,7 +329,6 @@ class NearCliWallet {
       step: `Step ${++currentStep} of ${totalSteps}`,
     });
 
-    // Step: Show sign-message command
     const nonceBase64 = Buffer.from(nonce).toString("base64");
     const command = buildSignMessageCommand({
       message,
@@ -363,7 +340,6 @@ class NearCliWallet {
 
     const output = await promptSignMessageOutput(command, `Step ${++currentStep} of ${totalSteps}`);
 
-    // Step: Generate keypair and show add-key (if needed)
     let publicKey = output.publicKey;
     if (needsAddKey) {
       const keyPair = KeyPair.fromRandom("ed25519");
@@ -430,7 +406,6 @@ class NearCliWallet {
     const actions = connectorActionsToNearActions(connectorActions);
     const fck = await getStoredFunctionCallKey(network);
 
-    // Try local signing first
     if (storedKeyCanSign(receiverId, actions, fck)) {
       try {
         return await signUsingKeyPair(network, accountId, fck!, receiverId, actions);
@@ -439,7 +414,6 @@ class NearCliWallet {
       }
     }
 
-    // Show CLI command
     const command = buildTransactionCommand({
       signerId: accountId,
       receiverId,
@@ -475,7 +449,6 @@ class NearCliWallet {
       for (const tx of transactions) {
         const actions = connectorActionsToNearActions(tx.actions);
 
-        // Try local signing first
         if (storedKeyCanSign(tx.receiverId, actions, fck)) {
           try {
             results.push(await signUsingKeyPair(network, accountId, fck!, tx.receiverId, actions));
@@ -485,7 +458,6 @@ class NearCliWallet {
           }
         }
 
-        // Show CLI command for this transaction
         const command = buildTransactionCommand({
           signerId: accountId,
           receiverId: tx.receiverId,
