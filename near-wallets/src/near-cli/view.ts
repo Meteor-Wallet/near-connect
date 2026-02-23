@@ -238,11 +238,11 @@ export function transactionCommandHtml(command: string): string {
   return /* html */ `
     <div class="container">
       <h2>Sign transaction</h2>
-      <p class="subtitle">Run this command in your terminal, then paste the transaction hash below</p>
+      <p class="subtitle">Run this command in your terminal, then paste the transaction hash or explorer URL below</p>
       ${commandBlockHtml(command)}
       <div class="field-group">
-        <label class="field-label">Transaction hash</label>
-        <input type="text" id="tx-hash" placeholder="Paste transaction hash here" autocomplete="off" spellcheck="false" />
+        <label class="field-label">Transaction hash or explorer URL</label>
+        <input type="text" id="tx-hash" placeholder="Paste transaction hash or explorer URL" autocomplete="off" spellcheck="false" />
       </div>
       <div id="error" class="error-text" style="display:none"></div>
       <button class="btn" id="verify-btn">Verify</button>

@@ -276,7 +276,7 @@
       "name": "NEAR CLI",
       "icon": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231a1a2e'/%3E%3Cpolyline points='18 40 28 30 18 20' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cline x1='32' y1='42' x2='46' y2='42' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E",
       "description": "Sign transactions using near-cli-rs in your terminal",
-      "website": "https://github.com/near/near-cli-rs",
+      "website": "https://near.cli.rs",
       "version": "1.0.0",
       "executor": "/near-connect/repository/near-cli.js",
       "type": "sandbox",

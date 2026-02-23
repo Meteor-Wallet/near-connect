@@ -82,7 +82,7 @@ export const ExampleNEAR: FC = () => {
           connector.switchNetwork(network);
         }}
       />
-      <button className={"input-button"} onClick={() => connect()}>
+      <button className={"input-button"} onClick={() => { connector.signInData = undefined; connect(); }}>
         {networkAccount != null ? `${networkAccount.id} (logout)` : "Connect"}
       </button>
       {networkAccount == null && (

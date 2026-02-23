@@ -331,17 +331,27 @@ class NearCliWallet {
 
   signInAndSignMessage = async ({ contractId, methodNames, network, messageParams }: any) => {
     const { message, recipient, nonce } = messageParams;
-    const totalSteps = contractId ? 3 : 2;
+    const existingAccountId = await getStoredAccountId(network);
+    const existingFck = await getStoredFunctionCallKey(network);
 
-    // Step 1: Ask for account ID
-    const accountId = await promptAccountId({
+    const needsAccountId = !existingAccountId;
+    const needsAddKey = contractId && existingFck?.contractId !== contractId;
+
+    // Count steps: accountId (if needed) + sign message + add key (if needed)
+    let totalSteps = 1; // sign message is always required
+    if (needsAccountId) totalSteps++;
+    if (needsAddKey) totalSteps++;
+    let currentStep = 0;
+
+    // Step: Ask for account ID (skip if returning user)
+    const accountId = existingAccountId || await promptAccountId({
       title: "Connect with NEAR CLI",
       subtitle: "Enter your NEAR account ID to sign in and sign a message",
       buttonText: "Next",
-      step: `Step 1 of ${totalSteps}`,
+      step: `Step ${++currentStep} of ${totalSteps}`,
     });
 
-    // Step 2: Show sign-message command
+    // Step: Show sign-message command
     const nonceBase64 = Buffer.from(nonce).toString("base64");
     const command = buildSignMessageCommand({
       message,
@@ -351,11 +361,11 @@ class NearCliWallet {
       signerId: accountId,
     });
 
-    const output = await promptSignMessageOutput(command, `Step 2 of ${totalSteps}`);
+    const output = await promptSignMessageOutput(command, `Step ${++currentStep} of ${totalSteps}`);
 
-    // If contractId provided, also generate keypair and show add-key
+    // Step: Generate keypair and show add-key (if needed)
     let publicKey = output.publicKey;
-    if (contractId) {
+    if (needsAddKey) {
       const keyPair = KeyPair.fromRandom("ed25519");
       publicKey = keyPair.getPublicKey().toString();
 
@@ -367,7 +377,7 @@ class NearCliWallet {
         network,
       });
 
-      await promptAddKeyCommand(addKeyCmd, `Step 3 of ${totalSteps}`);
+      await promptAddKeyCommand(addKeyCmd, `Step ${++currentStep} of ${totalSteps}`);
 
       const fck: FunctionCallKey = {
         privateKey: keyPair.toString(),
