@@ -280,22 +280,25 @@ async function verifyTransaction(
 class NearCliWallet {
   signIn = async ({ contractId, methodNames, network }: any) => {
     const existingAccountId = await getStoredAccountId(network);
-    if (existingAccountId) {
-      const fck = await getStoredFunctionCallKey(network);
-      const publicKey = fck ? KeyPair.fromString(fck.privateKey as any).getPublicKey().toString() : "";
+    const existingFck = await getStoredFunctionCallKey(network);
+
+    // Already signed in with a matching function call key — nothing to do
+    if (existingAccountId && (!contractId || existingFck?.contractId === contractId)) {
+      const publicKey = existingFck ? KeyPair.fromString(existingFck.privateKey as any).getPublicKey().toString() : "";
       return [{ accountId: existingAccountId, publicKey }];
     }
 
-    if (contractId) {
-      // Step 1: Ask for account ID
-      const accountId = await promptAccountId({
-        title: "Connect with NEAR CLI",
-        subtitle: "Enter your NEAR account ID",
-        buttonText: "Next",
-        step: "Step 1 of 2",
-      });
+    // Need account ID (either new user or returning user who needs a new key)
+    const needsAccountId = !existingAccountId;
+    const accountId = existingAccountId || await promptAccountId({
+      title: "Connect with NEAR CLI",
+      subtitle: "Enter your NEAR account ID",
+      buttonText: contractId ? "Next" : "Connect",
+      step: contractId && needsAccountId ? "Step 1 of 2" : undefined,
+    });
 
-      // Step 2: Generate keypair and show add-key command
+    if (contractId) {
+      // Generate keypair and show add-key command
       const keyPair = KeyPair.fromRandom("ed25519");
       const publicKey = keyPair.getPublicKey().toString();
 
@@ -307,7 +310,7 @@ class NearCliWallet {
         network,
       });
 
-      await promptAddKeyCommand(command, "Step 2 of 2");
+      await promptAddKeyCommand(command, needsAccountId ? "Step 2 of 2" : undefined);
 
       // Store credentials
       const fck: FunctionCallKey = {
@@ -319,18 +322,11 @@ class NearCliWallet {
       await setStoredFunctionCallKey(network, fck);
 
       return [{ accountId, publicKey }];
-    } else {
-      // Sign-in without add-key: just ask for account ID
-      const accountId = await promptAccountId({
-        title: "Connect with NEAR CLI",
-        subtitle: "Enter your NEAR account ID",
-        buttonText: "Connect",
-      });
-
-      await setStoredAccountId(network, accountId);
-
-      return [{ accountId, publicKey: "" }];
     }
+
+    // Sign-in without add-key
+    await setStoredAccountId(network, accountId);
+    return [{ accountId, publicKey: "" }];
   };
 
   signInAndSignMessage = async ({ contractId, methodNames, network, messageParams }: any) => {

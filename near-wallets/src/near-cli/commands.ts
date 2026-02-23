@@ -29,12 +29,14 @@ export function buildAddKeyCommand({
   publicKey,
   contractId,
   methodNames,
+  allowance = "0.25",
   network,
 }: {
   accountId: string;
   publicKey: string;
   contractId?: string;
   methodNames?: string[];
+  allowance?: string;
   network: Network;
 }): string {
   const parts: string[] = ["near account"];
@@ -42,6 +44,7 @@ export function buildAddKeyCommand({
 
   if (contractId) {
     parts.push("grant-function-call-access");
+    parts.push(`--allowance '${allowance} NEAR'`);
     parts.push(`--contract-account-id '${shellEscape(contractId)}'`);
     if (methodNames && methodNames.length > 0) {
       parts.push(`--function-names '${shellEscape(methodNames.join(", "))}'`);
