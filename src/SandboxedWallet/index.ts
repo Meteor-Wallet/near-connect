@@ -30,14 +30,14 @@ export class SandboxWallet {
   async signIn(data?: SignInParams): Promise<Array<Account>> {
     return this.executor.call("wallet:signIn", {
       network: data?.network ?? this.connector.network,
-      functionCallAccessKey: data?.functionCallAccessKey,
+      functionCallAccessKey: data?.addFunctionCallAccessKey,
     });
   }
 
   async signInAndSignMessage(data: SignInAndSignMessageParams): Promise<Array<AccountWithSignedMessage>> {
     return this.executor.call("wallet:signInAndSignMessage", {
       network: data?.network ?? this.connector.network,
-      functionCallAccessKey: data?.functionCallAccessKey,
+      functionCallAccessKey: data?.addFunctionCallAccessKey,
       messageParams: data.messageParams,
     });
   }

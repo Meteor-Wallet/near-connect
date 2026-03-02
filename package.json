@@ -25,6 +25,7 @@
     "prepublish": "yarn build",
     "cdn": "yarn pre-build && vite build",
     "type-check": "tsc --noEmit"
+    "type-check-all": "yarn run type-check && cd example && yarn run type-check && cd ../near-wallets && yarn run type-check"
   },
   "devDependencies": {
     "@near-js/transactions": "^2.5.1",

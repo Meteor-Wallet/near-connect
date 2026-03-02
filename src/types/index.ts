@@ -12,15 +12,23 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Network = "mainnet" | "testnet";
 
-export type NearKeyType = "ed25519" | "secp256k1";
+export interface FunctionCallAccessKey_AllMethods {
+  target: "all_methods";
+}
 
-export type NearPrefixedKey = `${NearKeyType}:${string}`;
+export interface FunctionCallAccessKey_SelectMethods {
+  target: "select_methods";
+  methodNames: string[];
+}
+
+export type FunctionCallAccessKey_MethodTarget = FunctionCallAccessKey_AllMethods | FunctionCallAccessKey_SelectMethods;
 
 export interface FunctionCallAccessKeyParams {
-  accountId: string;
+  // The contract / account ID which the access key will have access to call methods on.
+  receiverId: string;
   /** Using format "<key_type>:<base58_public_key>" e.g. "ed25519:3N5QmbhVqLh9ZtZs1zj8X9v1u1Z1Z1Z1Z1Z1Z1Z1Z1Z" */
-  publicKey: NearPrefixedKey;
-  methods?: string[];
+  publicKey: string;
+  methodTarget: FunctionCallAccessKey_MethodTarget;
 }
 
 export interface NearConnector_ConnectOptions {
@@ -34,7 +42,7 @@ export interface NearConnector_ConnectOptions {
    * This is useful for cases where you want to verify ownership of the account during sign in without any additional steps.
    */
   signMessageParams?: SignMessageDuringSignInParams;
-  functionCallAccessKey?: FunctionCallAccessKeyParams;
+  addFunctionCallAccessKey?: FunctionCallAccessKeyParams;
 }
 
 export interface Account {
@@ -132,7 +140,7 @@ export interface WalletFeatures {
 
 export interface SignInParams {
   network?: Network;
-  functionCallAccessKey?: FunctionCallAccessKeyParams;
+  addFunctionCallAccessKey?: FunctionCallAccessKeyParams;
 }
 
 export interface SignInAndSignMessageParams extends SignInParams {
