@@ -4,7 +4,7 @@ import { FC, useMemo, useState } from "react";
 
 import { KeyPairEd25519 } from "@near-js/crypto";
 import { useLocalStorage } from "usehooks-ts";
-import type { NearConnector_ConnectOptions, NearPrefixedKey } from "../../src/types/index.ts";
+import type { NearConnector_ConnectOptions } from "../../src/types/index.ts";
 import { NetworkSelector } from "./form-component/NetworkSelector.tsx";
 import { WalletActions } from "./WalletActions.tsx";
 
@@ -12,7 +12,7 @@ export const ExampleNEAR: FC = () => {
   const [network, setNetwork] = useState<"testnet" | "mainnet">("mainnet");
   const [account, _setAccount] = useState<{ id: string; network: "testnet" | "mainnet" }>();
   const [wallet, setWallet] = useState<NearWalletBase | undefined>();
-  const [publicKey, setPublicKey] = useLocalStorage<NearPrefixedKey | undefined>("example-public-key", undefined);
+  const [extendedSecretKey, setExtendedSecretKey] = useLocalStorage<string | undefined>("example-extended-secret-key", undefined);
 
   const logger = {
     log: (...args: any[]) => console.log(args),
@@ -85,7 +85,12 @@ export const ExampleNEAR: FC = () => {
           connector.switchNetwork(network);
         }}
       />
-      <button className={"input-button"} onClick={() => { connect(); }}>
+      <button
+        className={"input-button"}
+        onClick={() => {
+          connect();
+        }}
+      >
         {networkAccount != null ? `${networkAccount.id} (logout)` : "Connect"}
       </button>
       {networkAccount == null && (
@@ -102,15 +107,20 @@ export const ExampleNEAR: FC = () => {
           <button
             className={"input-button"}
             onClick={() => {
-              const publicKey = KeyPairEd25519.fromRandom().publicKey.toString() as NearPrefixedKey;
-              
-              setPublicKey(publicKey);
+              const key = KeyPairEd25519.fromRandom();
+              const extendedSecretKey = key.toString();
+              const publicKey = key.publicKey.toString();
+
+              setExtendedSecretKey(extendedSecretKey);
 
               connect({
-                functionCallAccessKey: {
-                  publicKey,
-                  accountId: "social.near",
-                  methods: ["set"],
+                addFunctionCallAccessKey: {
+                  publicKey: publicKey,
+                  receiverId: "social.near",
+                  methodTarget: {
+                    target: "select_methods",
+                    methodNames: ["get"],
+                  },
                 },
               });
             }}
@@ -120,7 +130,7 @@ export const ExampleNEAR: FC = () => {
         </>
       )}
 
-      {networkAccount != null && <WalletActions publicKey={publicKey} wallet={wallet!} network={network} />}
+      {networkAccount != null && <WalletActions extendedSecretKey={extendedSecretKey} wallet={wallet!} network={network} />}
     </div>
   );
 };

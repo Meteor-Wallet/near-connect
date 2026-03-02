@@ -262,7 +262,7 @@ export class NearConnector {
       walletId = await this.selectWallet({
         features: {
           signInAndSignMessage: input.signMessageParams != null ? true : undefined,
-          signInWithFunctionCallAccessKey: input.functionCallAccessKey != null ? true : undefined,
+          signInWithFunctionCallAccessKey: input.addFunctionCallAccessKey != null ? true : undefined,
         },
       });
     }
@@ -276,7 +276,7 @@ export class NearConnector {
 
       if (signMessageParams != null) {
         const accounts = await wallet.signInAndSignMessage({
-          functionCallAccessKey: input.functionCallAccessKey,
+          addFunctionCallAccessKey: input.addFunctionCallAccessKey,
           messageParams: signMessageParams,
           network: this.network,
         });
@@ -296,7 +296,7 @@ export class NearConnector {
         });
       } else {
         const accounts = await wallet.signIn({
-          functionCallAccessKey: input.functionCallAccessKey,
+          addFunctionCallAccessKey: input.addFunctionCallAccessKey,
           network: this.network,
         });
 

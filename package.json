@@ -22,7 +22,8 @@
     "build:wallets": "cd near-wallets && yarn build:wallets",
     "build": "rm -rf build && yarn tsc",
     "cdn": "vite build",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "type-check-all": "yarn run type-check && cd example && yarn run type-check && cd ../near-wallets && yarn run type-check"
   },
   "devDependencies": {
     "@near-js/transactions": "^2.5.1",
