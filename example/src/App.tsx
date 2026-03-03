@@ -123,7 +123,7 @@ export const ExampleNEAR: FC = () => {
                     methodNames: ["get", "set"],
                   },
                   gasAllowance: {
-                    type: "limited",
+                    kind: "limited",
                     amount: parseNearAmount("0.5")!, // 0.5 NEAR in yoctoNEAR
                   },
                 },

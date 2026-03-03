@@ -287,7 +287,7 @@ export class NearConnector {
         addFunctionCallKey = {
           ...input.addFunctionCallKey,
           gasAllowance: input.addFunctionCallKey.gasAllowance ?? {
-            type: "limited",
+            kind: "limited",
             amount: parseNearAmount("0.25")!, // 0.25 NEAR in yoctoNEAR
           },
         }
