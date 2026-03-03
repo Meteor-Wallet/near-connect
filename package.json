@@ -24,7 +24,7 @@
     "build": "rm -rf build && yarn pre-build && yarn tsc",
     "prepublish": "yarn build",
     "cdn": "yarn pre-build && vite build",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
     "type-check-all": "yarn run type-check && cd example && yarn run type-check && cd ../near-wallets && yarn run type-check"
   },
   "dependencies": {

@@ -18,7 +18,6 @@ export type {
   SignAndSendTransactionParams,
   SignAndSendTransactionsParams,
   SignDelegateActionsParams,
-  SignDelegateActionResult,
   NearConnector_ConnectOptions,
   SignInAndSignMessageParams,
   AccountWithSignedMessage,

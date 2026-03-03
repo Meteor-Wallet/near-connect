@@ -1,5 +1,5 @@
 import type { FinalExecutionOutcome } from "@near-js/types";
-import type { Action, DelegateAction, SignedDelegate } from "@near-js/transactions";
+import type { Action } from "@near-js/transactions";
 import type { ConnectorAction } from "../actions/types";
 
 export type { FinalExecutionOutcome, Action };
