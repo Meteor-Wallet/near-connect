@@ -117,9 +117,9 @@ export const ExampleNEAR: FC = () => {
               connect({
                 addFunctionCallKey: {
                   publicKey: publicKey,
-                  receiverId: network === "mainnet" ? "social.near" : "v1.social08.testnet",
-                  methodTarget: {
-                    target: "select_methods",
+                  contractId: network === "mainnet" ? "social.near" : "v1.social08.testnet",
+                  allowMethods: {
+                    anyMethod: false,
                     methodNames: ["get", "set"],
                   },
                   gasAllowance: {
