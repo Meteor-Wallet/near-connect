@@ -36,12 +36,13 @@ export interface FunctionCallAccessKey_GasAllowance_Limited {
 export type AddFunctionCallKey_GasAllowance = FunctionCallAccessKey_GasAllowance_Unlimited | FunctionCallAccessKey_GasAllowance_Limited;
 
 export interface AddFunctionCallKeyParams {
-  // The contract account ID which the access key will have access to call methods on.
+  // The contract account ID which the Function Call Key will have access to call methods on.
   contractId: string;
   /** Using format "<key_type>:<base58_public_key>" e.g. "ed25519:3N5QmbhVqLh9ZtZs1zj8X9v1u1Z1Z1Z1Z1Z1Z1Z1Z1Z" */
   publicKey: string;
+  /** Define which methods can be called by this Function Call Key on the "contractId" account */
   allowMethods: AddFunctionCallKey_AllowMethods;
-  /** Optional:  The gas allowance for the function call key over its lifetime of executing transactions.
+  /** Optional:  The gas allowance for the Function Call Key over its lifetime of executing transactions.
    *  Default to "limited" with 0.25 NEAR (non-Yocto). */
   gasAllowance?: AddFunctionCallKey_GasAllowance;
 }

@@ -19,6 +19,10 @@ export type {
   SignAndSendTransactionsParams,
   SignDelegateActionsParams as SignDelegateActionParams,
   SignDelegateActionResult,
+  NearConnector_ConnectOptions,
   SignInAndSignMessageParams,
   AccountWithSignedMessage,
+  AddFunctionCallKeyParams,
+  AddFunctionCallKey_AllowMethods,
+  AddFunctionCallKey_GasAllowance,
 } from "./types";
