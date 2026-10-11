@@ -297,7 +297,11 @@ class SandboxExecutor {
     if (!url) throw new Error("Invalid executor URL");
 
     url.searchParams.set("nonce", cacheId);
-    const newVersion = await fetch(url.toString()).then((res) => res.text());
+    const newVersion = await fetch(url.toString()).then((res) => {
+      // An error page (raw.githubusercontent 429/5xx) must not be cached and run as the executor
+      if (!res.ok) throw new Error(`Failed to load executor: ${res.status}`);
+      return res.text();
+    });
     this.connector.logger?.log(`New version of code fetched`);
     this.actualCode = newVersion;
 
@@ -306,8 +310,13 @@ class SandboxExecutor {
       return this.actualCode;
     }
 
-    await this.connector.db.setItem(`${this.manifest.id}:${this.manifest.version}`, newVersion);
-    this.connector.logger?.log(`New version of code saved to cache`);
+    // The cache is optional: IndexedDB fails on iOS Safari ("Connection to Indexed Database server lost", private mode),
+    // and a failed write must not keep the wallet from opening
+    await this.connector.db
+      .setItem(`${this.manifest.id}:${this.manifest.version}`, newVersion)
+      .then(() => this.connector.logger?.log(`New version of code saved to cache`))
+      .catch((e) => this.connector.logger?.log(`Failed to cache new version of code`, e));
+
     return newVersion;
   }
 

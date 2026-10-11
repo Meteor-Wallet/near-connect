@@ -10,6 +10,8 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+
 const logoImage = new Image();
 logoImage.src = "https://hot-labs.org/hot-widget/icon.svg";
 
@@ -56,6 +58,46 @@ const openViaTelegram = async (link: string) => {
   } catch {}
 
   return false;
+};
+
+// Read-only probe of the Telegram bridges (nothing is called), resolved once per modal so the button
+// handlers can open links synchronously: Safari drops the tap gesture across postMessage round trips
+// and blocks window.open from the dApp page as a popup
+const detectTelegram = async () => {
+  try {
+    const platform = await window.selector.external("Telegram.WebApp", "platform");
+    if (platform && platform !== "unknown") return true;
+  } catch {}
+
+  try {
+    // Rejects when the dApp page has no TelegramWebviewProxy
+    await window.selector.external("TelegramWebviewProxy", "hotProbe");
+    return true;
+  } catch {}
+
+  return false;
+};
+
+// The browser leaving the page (app launched, chooser shown) blurs or hides the sandbox; a refused window.open gives no panel
+const appLaunched = (panel: { windowIdPromise: Promise<string | null> }, timeout = 2000) => {
+  return new Promise<boolean>((resolve) => {
+    const done = (launched: boolean) => {
+      clearTimeout(timer);
+      window.removeEventListener("blur", onLeave);
+      window.removeEventListener("pagehide", onLeave);
+      document.removeEventListener("visibilitychange", onVisibility);
+      resolve(launched);
+    };
+
+    const onLeave = () => done(true);
+    const onVisibility = () => document.visibilityState === "hidden" && done(true);
+    const timer = setTimeout(() => done(document.visibilityState === "hidden"), timeout);
+
+    window.addEventListener("blur", onLeave);
+    window.addEventListener("pagehide", onLeave);
+    document.addEventListener("visibilitychange", onVisibility);
+    panel.windowIdPromise.then((id) => id == null && done(false), () => done(false));
+  });
 };
 
 export class RequestFailed extends Error {
@@ -122,6 +164,9 @@ class HOT {
     if (qr) qr.innerHTML = "";
 
     window.selector.ui.showIframe();
+    let inTelegram: boolean | null = null;
+    detectTelegram().then((value) => (inTelegram = value));
+
     const requestId = await this.createRequest({ method, request });
     const link = `hotcall-${requestId}`;
     const qrcode = new QRCode({
@@ -149,15 +194,31 @@ class HOT {
     qrcode.render();
     qr?.appendChild(qrcode.canvas);
 
+    let intentFailed = false;
     const actions: Record<string, () => void> = {
       telegram: async () => {
         const url = `https://t.me/hot_wallet/app?startapp=${link}`;
-        if (!(await openViaTelegram(url))) window.selector.open(url);
+        if (inTelegram === false || !(await openViaTelegram(url))) window.selector.open(url);
       },
       extension: () => window.selector.open(`https://download.hot-labs.org?hotconnector`),
       mobile: async () => {
         // Telegram does not open custom schemes, the universal link opens the app or the web fallback
-        if (!(await openViaTelegram(`https://app.hot-labs.org/link?${link}`))) window.selector.openNativeApp(`hotwallet://${link}`);
+        const appLink = `https://app.hot-labs.org/link?${link}`;
+        if (inTelegram !== false && (await openViaTelegram(appLink))) return;
+
+        // Mobile browsers never launch an app from a hidden iframe (openNativeApp), so open a top-level tab:
+        // Android gets an intent with the app link as the fallback when HOT is not installed, iOS the universal link
+        if (!isAndroid() || intentFailed) return void window.selector.open(appLink);
+
+        const intent = `intent://${link}#Intent;scheme=hotwallet;package=app.herewallet.hot;S.browser_fallback_url=${encodeURIComponent(appLink)};end`;
+        const panel = window.selector.open(intent);
+        if (await appLaunched(panel)) return;
+
+        // The intent was blocked or ignored: the universal link opens the app or the web fallback.
+        // Without a fresh tap it may be blocked as a popup, so the next tap goes straight to it
+        intentFailed = true;
+        panel.close();
+        window.selector.open(appLink);
       },
     };
 
