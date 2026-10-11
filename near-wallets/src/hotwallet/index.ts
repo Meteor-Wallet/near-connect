@@ -78,6 +78,28 @@ const detectTelegram = async () => {
   return false;
 };
 
+// The browser leaving the page (app launched, chooser shown) blurs or hides the sandbox; a refused window.open gives no panel
+const appLaunched = (panel: { windowIdPromise: Promise<string | null> }, timeout = 2000) => {
+  return new Promise<boolean>((resolve) => {
+    const done = (launched: boolean) => {
+      clearTimeout(timer);
+      window.removeEventListener("blur", onLeave);
+      window.removeEventListener("pagehide", onLeave);
+      document.removeEventListener("visibilitychange", onVisibility);
+      resolve(launched);
+    };
+
+    const onLeave = () => done(true);
+    const onVisibility = () => document.visibilityState === "hidden" && done(true);
+    const timer = setTimeout(() => done(document.visibilityState === "hidden"), timeout);
+
+    window.addEventListener("blur", onLeave);
+    window.addEventListener("pagehide", onLeave);
+    document.addEventListener("visibilitychange", onVisibility);
+    panel.windowIdPromise.then((id) => id == null && done(false), () => done(false));
+  });
+};
+
 export class RequestFailed extends Error {
   name = "RequestFailed";
   constructor(readonly payload: any) {
@@ -172,6 +194,7 @@ class HOT {
     qrcode.render();
     qr?.appendChild(qrcode.canvas);
 
+    let intentFailed = false;
     const actions: Record<string, () => void> = {
       telegram: async () => {
         const url = `https://t.me/hot_wallet/app?startapp=${link}`;
@@ -185,8 +208,17 @@ class HOT {
 
         // Mobile browsers never launch an app from a hidden iframe (openNativeApp), so open a top-level tab:
         // Android gets an intent with the app link as the fallback when HOT is not installed, iOS the universal link
+        if (!isAndroid() || intentFailed) return void window.selector.open(appLink);
+
         const intent = `intent://${link}#Intent;scheme=hotwallet;package=app.herewallet.hot;S.browser_fallback_url=${encodeURIComponent(appLink)};end`;
-        window.selector.open(isAndroid() ? intent : appLink);
+        const panel = window.selector.open(intent);
+        if (await appLaunched(panel)) return;
+
+        // The intent was blocked or ignored: the universal link opens the app or the web fallback.
+        // Without a fresh tap it may be blocked as a popup, so the next tap goes straight to it
+        intentFailed = true;
+        panel.close();
+        window.selector.open(appLink);
       },
     };
 
