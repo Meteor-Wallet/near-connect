@@ -10,6 +10,8 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+const isAndroid = () => /Android/i.test(navigator.userAgent);
+
 const logoImage = new Image();
 logoImage.src = "https://hot-labs.org/hot-widget/icon.svg";
 
@@ -52,6 +54,24 @@ const openViaTelegram = async (link: string) => {
     const event = isTgLink ? "web_app_open_tg_link" : "web_app_open_link";
     const data = isTgLink ? { path_full: url.pathname + url.search } : { url: link };
     await window.selector.external("TelegramWebviewProxy", "postEvent", event, JSON.stringify(data));
+    return true;
+  } catch {}
+
+  return false;
+};
+
+// Read-only probe of the Telegram bridges (nothing is called), resolved once per modal so the button
+// handlers can open links synchronously: Safari drops the tap gesture across postMessage round trips
+// and blocks window.open from the dApp page as a popup
+const detectTelegram = async () => {
+  try {
+    const platform = await window.selector.external("Telegram.WebApp", "platform");
+    if (platform && platform !== "unknown") return true;
+  } catch {}
+
+  try {
+    // Rejects when the dApp page has no TelegramWebviewProxy
+    await window.selector.external("TelegramWebviewProxy", "hotProbe");
     return true;
   } catch {}
 
@@ -122,6 +142,9 @@ class HOT {
     if (qr) qr.innerHTML = "";
 
     window.selector.ui.showIframe();
+    let inTelegram: boolean | null = null;
+    detectTelegram().then((value) => (inTelegram = value));
+
     const requestId = await this.createRequest({ method, request });
     const link = `hotcall-${requestId}`;
     const qrcode = new QRCode({
@@ -152,12 +175,18 @@ class HOT {
     const actions: Record<string, () => void> = {
       telegram: async () => {
         const url = `https://t.me/hot_wallet/app?startapp=${link}`;
-        if (!(await openViaTelegram(url))) window.selector.open(url);
+        if (inTelegram === false || !(await openViaTelegram(url))) window.selector.open(url);
       },
       extension: () => window.selector.open(`https://download.hot-labs.org?hotconnector`),
       mobile: async () => {
         // Telegram does not open custom schemes, the universal link opens the app or the web fallback
-        if (!(await openViaTelegram(`https://app.hot-labs.org/link?${link}`))) window.selector.openNativeApp(`hotwallet://${link}`);
+        const appLink = `https://app.hot-labs.org/link?${link}`;
+        if (inTelegram !== false && (await openViaTelegram(appLink))) return;
+
+        // Mobile browsers never launch an app from a hidden iframe (openNativeApp), so open a top-level tab:
+        // Android gets an intent with the app link as the fallback when HOT is not installed, iOS the universal link
+        const intent = `intent://${link}#Intent;scheme=hotwallet;package=app.herewallet.hot;S.browser_fallback_url=${encodeURIComponent(appLink)};end`;
+        window.selector.open(isAndroid() ? intent : appLink);
       },
     };
 
