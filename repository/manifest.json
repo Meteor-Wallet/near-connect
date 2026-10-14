@@ -51,7 +51,7 @@
       "icon": "https://raw.githubusercontent.com/Meteor-Wallet/meteor_wallet_sdk/main/assets/meteor-logo-svg.svg",
       "description": "The most simple and secure wallet to manage your crypto, access DeFi, and explore Web3",
       "website": "https://meteorwallet.app/",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "executor": "https://raw.githubusercontent.com/Meteor-Wallet/meteor_wallet_sdk/data-storage/storage/meteor-near-connect-latest.js",
       "type": "sandbox",
 
@@ -69,7 +69,9 @@
 
       "platform": {
         "web": "https://wallet.meteorwallet.app",
-        "chrome": "https://chromewebstore.google.com/detail/meteor-wallet/pcndjhkinnkaohffealmlmhaepkpmgkb"
+        "chrome": "https://chromewebstore.google.com/detail/meteor-wallet/pcndjhkinnkaohffealmlmhaepkpmgkb",
+        "android": "https://play.google.com/store/apps/details?id=app.meteorwallet.v2",
+        "ios": "https://apps.apple.com/us/app/meteor-wallet/id6739558223"
       },
 
       "permissions": {
@@ -77,7 +79,9 @@
         "allowsOpen": [
           "https://chromewebstore.google.com",
           "https://wallet.meteorwallet.app",
-          "https://meteorwallet.app"
+          "https://meteorwallet.app",
+          "meteorwallet://",
+          "meteorwalletdev://"
         ],
         "external": ["meteorCom", "meteorComV2"]
       }
